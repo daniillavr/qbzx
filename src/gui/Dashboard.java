@@ -96,7 +96,7 @@ public class Dashboard extends Scene implements Supplement.sceneSupplement
 		users = new ComboBox<>();
 		viewElems = new LinkedList<Pane>();
 		
-		for( var user : MainWindow.users)
+		for( var user : supplement.Settings.users)
 			users.getItems().add(user);
 		users.setValue(users.getItems().get(0));
 		

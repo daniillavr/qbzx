@@ -58,12 +58,12 @@ public class Settings extends Stage
 					Stage settingsStage = self ; 
 					@Override
 					public void handle(MouseEvent event) {
-						Supplement.settingsValue.downloadPath = downloadPathField.getText() ;
+						supplement.Settings.downloadPath = downloadPathField.getText() ;
 						settingsStage.close() ;
 					}
 				});
 		
-		downloadPathField.setText(Supplement.settingsValue.downloadPath);
+		downloadPathField.setText(supplement.Settings.downloadPath);
 		
 		this.show();
 		

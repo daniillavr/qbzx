@@ -21,13 +21,11 @@ public class MainWindow extends Application
 	static Stage stage ;
 	static Supplement.sceneSupplement currentScene ;
 	static ArrayList<Supplier<Supplement.sceneSupplement>> scenesSuppliers ;
-	static List<QobuzApi.loginInfo> users ;
 	
 	
 	static
 	{
 		scenesSuppliers = new ArrayList<Supplier<Supplement.sceneSupplement>>();
-		users = new LinkedList<QobuzApi.loginInfo>() ;
 	}
 	
 	public MainWindow()

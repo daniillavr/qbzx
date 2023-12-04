@@ -3,9 +3,13 @@ package supplement;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.util.Base64;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -15,8 +19,10 @@ import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.images.*;
-import org.json.JSONObject;
+import org.json.*;
+
 import gui.Dashboard;
+import gui.MainWindow;
 import javafx.application.Platform;
 import javafx.beans.property.Property;
 import javafx.collections.FXCollections;
@@ -33,11 +39,11 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.text.Font;
-import main.Main;
 import qobuz_api.QobuzApi;
 import qobuz_api.QobuzApi.loginInfo;
 
 public class Supplement {
+	
 	public interface sceneSupplement
 	{
 		String			getName()			;
@@ -379,16 +385,11 @@ public class Supplement {
 			tags.setField(FieldKey.CUSTOM1, ignoreExc(() -> musicObj.getJSONObject("album").getString("id") , ""));
 			tags.setField(FieldKey.TITLE, ignoreExc(() -> musicObj.getString("title") , ""));
 			au.commit();
-			fl.renameTo( new File( Supplement.settingsValue.downloadPath + ignoreExc(() -> musicObj.getJSONObject("performer").getString("name") , "null") + " - " + ignoreExc(() -> musicObj.getString("title") , "null") + "." + fl.getName().split("\\.")[1] ) ) ;
+			fl.renameTo( new File( supplement.Settings.downloadPath + ignoreExc(() -> musicObj.getJSONObject("performer").getString("name") , "null") + " - " + ignoreExc(() -> musicObj.getString("title") , "null") + "." + fl.getName().split("\\.")[1] ) ) ;
 		}
 		catch(Exception ex)
 		{
 			System.out.println("Exception ID3: " + ex.getMessage());
 		}
-	}
-	
-	public static class settingsValue
-	{
-		public static String downloadPath = "" ;
 	}
 }

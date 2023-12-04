@@ -3,6 +3,7 @@ package main;
 import java.util.function.Supplier;
 
 import gui.* ;
+import supplement.Supplement;
 
 public class Main
 {

@@ -46,10 +46,6 @@ public class QobuzApi
 	
 	static public class QobuzError extends Throwable
 	{
-
-		/**
-		 * 
-		 */
 		private static final long serialVersionUID = 1L;
 		
 		public QobuzError( String error )
@@ -64,8 +60,16 @@ public class QobuzApi
 		try
 		{
 			info.getStatus().setValue(Supplement.statuses.GETTING_SECRET.currentStatus);
-			HttpClient cli = HttpClient.newBuilder().version(Version.HTTP_2).followRedirects(Redirect.NORMAL).build();
-			HttpRequest req = HttpRequest.newBuilder().timeout(Duration.ofSeconds(5)).uri(new URI(qobuzURL + "/login")).GET().build();
+			HttpClient cli = HttpClient.newBuilder()
+					.connectTimeout(Duration.ofSeconds(5))
+					.version(Version.HTTP_2)
+					.followRedirects(Redirect.NORMAL)
+					.build();
+			HttpRequest req = HttpRequest.newBuilder()
+					.timeout(Duration.ofSeconds(5))
+					.uri(new URI(qobuzURL + "/login"))
+					.GET()
+					.build();
 			
 			HttpResponse<String> resp = cli.send(req, BodyHandlers.ofString());
 			Matcher find = Pattern.compile("<script src=\"(\\/resources\\/[\\.\\-\\w]+\\/bundle\\.js)\">").matcher(resp.body());
@@ -108,6 +112,43 @@ public class QobuzApi
 			info.getStatus().setValue(Supplement.statuses.ERROR.currentStatus);
 			throw new QobuzError("Something went wrong when getting secret(Qobuz changed patterns...).");
 		}
+	}
+	
+	static public void getUserToken( loginInfo info ) throws QobuzError
+	{
+		info.getStatus().setValue(Supplement.statuses.GETTING_USER_AUTH.currentStatus);
+		try
+		{
+			String str = new StringBuilder()
+					.append(qobuzAPI)
+					.append("user/login?email=")
+					.append(info.getLogin())
+					.append("&password=")
+					.append(info.getPassword())
+					.append("&app_id=")
+					.append(info.getAppID())
+					.toString();
+			HttpClient cli = HttpClient.newBuilder()
+					.connectTimeout(Duration.ofSeconds(5))
+					.version(Version.HTTP_2)
+					.followRedirects(Redirect.NORMAL).build();
+			HttpRequest req = HttpRequest.newBuilder()
+					.timeout(Duration.ofSeconds(5))
+					.uri(new URI(str))
+					.GET().build();
+			
+			HttpResponse<String> resp = cli.send(req, BodyHandlers.ofString());
+			
+			JSONObject jsonObject = new JSONObject(new JSONTokener(new StringReader(resp.body())));
+			System.out.println(jsonObject);
+			info.setUserAuth((String)jsonObject.get("user_auth_token"));
+		}
+		catch(Exception ex)
+		{
+			info.getStatus().setValue(Supplement.statuses.ERROR.currentStatus);
+			throw new QobuzError("Something went wrong when getting user token.");
+		}
+		info.getStatus().setValue(Supplement.statuses.GOT_USER_AUTH.currentStatus);
 	}
 	
 	static public byte[] getImage(loginInfo info , String typeSearch , String id , String imageSize )
@@ -281,40 +322,6 @@ public class QobuzApi
 		return jsonObject ;
 	}
 	
-	static public void getUserToken( loginInfo info ) throws QobuzError
-	{
-		info.getStatus().setValue(Supplement.statuses.GETTING_USER_AUTH.currentStatus);
-		try
-		{
-			String str = new StringBuilder()
-					.append(qobuzAPI)
-					.append("user/login?email=")
-					.append(info.getLogin())
-					.append("&password=")
-					.append(info.getPassword())
-					.append("&app_id=")
-					.append(info.getAppID())
-					.toString();
-			HttpClient cli = HttpClient.newBuilder().version(Version.HTTP_2).followRedirects(Redirect.NORMAL).build();
-			HttpRequest req = HttpRequest.newBuilder()
-					.timeout(Duration.ofSeconds(5))
-					.uri(new URI(str))
-					.GET().build();
-			
-			HttpResponse<String> resp = cli.send(req, BodyHandlers.ofString());
-			
-			JSONObject jsonObject = new JSONObject(new JSONTokener(new StringReader(resp.body())));
-			System.out.println(jsonObject);
-			info.setUserAuth((String)jsonObject.get("user_auth_token"));
-		}
-		catch(Exception ex)
-		{
-			info.getStatus().setValue(Supplement.statuses.ERROR.currentStatus);
-			throw new QobuzError("Something went wrong when getting user token.");
-		}
-		info.getStatus().setValue(Supplement.statuses.GOT_USER_AUTH.currentStatus);
-	}
-	
 	static public class loginInfo
 	{
 		String						login		,
@@ -322,6 +329,7 @@ public class QobuzApi
 									appID		,
 									appSecret	,
 									userAuth	;
+		boolean						saveInfo	;
 		public Property<String>		statusCode	;
 		
 		public loginInfo()
@@ -345,18 +353,31 @@ public class QobuzApi
 		public void setAppID(String id) { appID = id ; }
 		public void setAppSecret(String secret) { appSecret = secret ; }
 		public void setUserAuth(String us) { userAuth = us ; }
+		public void setSave(boolean save) { saveInfo = save ; }
 		
 		public String 			getLogin() { return login ; }
 		public String 			getPassword() { return password ; }
 		public String 			getAppID() { return appID ; }
 		public String 			getAppSecret() { return appSecret ; }
 		public String 			getUserAuth() { return userAuth ; }
+		public boolean			getSave() { return saveInfo ; }
 		public Property<String>	getStatus() { return statusCode ; }
 		
 		@Override
 		public String toString()
 		{
 			return login ;
+		}
+		
+		@Override
+		public boolean equals( Object o )
+		{
+			if( o == null || this.getClass() != o.getClass() )
+				return false ;
+			
+			loginInfo li = (loginInfo)o ;
+			
+			return li.getLogin().equals( this.getLogin() ) && li.getPassword().equals( this.getPassword() ) ;
 		}
 		
 	}

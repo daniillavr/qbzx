@@ -6,10 +6,12 @@ import javafx.beans.property.Property;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.text.Font;
 import javafx.scene.control.TextField;
@@ -30,19 +32,22 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 	ImageView 						exitImage							;
 	LableTextField					login								,
 									password							;
-	Label							status								;
-	
+	Label							status								,
+									saveUserLabel						;
+	CheckBox						saveUserCheck						;
 	final String					name		= "Login window Qobuz"	;
 	static public IntegerProperty	statusCode							;
 	static final double				width		= 300					,
 									height		= 500					;
 	static LoginWindow				single								;
 	loginInfo						user								;
+	static Boolean					saveUserInfo						;
 	
 	static
 	{
 		single = null ;
 		statusCode = new SimpleIntegerProperty(0);
+		saveUserInfo = false ;
 	}
 	
 	@Override
@@ -75,13 +80,15 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 		super(new Group(), width, height);
 		InitObject();
 		
-		
 		status.setText("Start");
 		
 		exitImage.setFitHeight(30);
 		exitImage.setFitWidth(30);
 		loginButton.setPrefWidth(100);
 		status.setPrefWidth(150);
+		
+		saveUserLabel.setFont( Font.font( 17 ) );
+		saveUserCheck.setFont( Font.font( 17 ) );
 		
 		loginPane.applyCss();
 		loginPane.layout();
@@ -95,13 +102,35 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 		login.setLayoutX( loginPane.getWidth() / 2 - login.getWidth() / 2 ) ;
 		login.setLayoutY( 160 );
 		password.setLayoutX( loginPane.getWidth() / 2 - password.getWidth() / 2 ) ;
-		password.setLayoutY( 200 );
+		password.setLayoutY( login.getLayoutY() + 40 );
+		
+		if( !supplement.Settings.users.isEmpty() )
+		{
+			login.setText(supplement.Settings.users.get(0).getLogin());
+			password.setText(supplement.Settings.users.get(0).getPassword());
+			saveUserCheck.fire();
+		}
+		
+		saveUserLabel.setLayoutX(this.getWidth() / 2 - ( saveUserLabel.getWidth() + 20 + saveUserCheck.getWidth() ) / 2 );
+		saveUserLabel.setLayoutY(password.getLayoutY() + 40 );
+		saveUserLabel.setStyle("-fx-text-fill: white; -fx-background-radius: 0; -fx-padding: 0;");
+		
+		saveUserCheck.setLayoutX( saveUserLabel.getLayoutX() + saveUserLabel.getWidth() + 20 );
+		saveUserCheck.setLayoutY(password.getLayoutY() + 40 );
+		saveUserCheck.setStyle("-fx-background-color: rgba(255,255,255,0.4); -fx-background-radius: 0; -fx-padding: 0; -fx-background-insets: 0;");
 		
 		status.setFont( Font.font( 17 ) );
 		status.setLayoutX(loginPane.getWidth() / 2 - status.getPrefWidth() / 2);
 		status.setLayoutY(loginButton.getLayoutY() + loginButton.prefHeight(-1) + 10 );
 		status.setStyle("-fx-text-fill: white; -fx-alignment:center;");
 		
+		saveUserCheck.setOnAction( new EventHandler<ActionEvent>() 
+				{
+					@Override
+					public void handle(ActionEvent event) {
+						LoginWindow.saveUserInfo = !LoginWindow.saveUserInfo ;
+					}
+				});
 		
 		loginButton.setOnMouseClicked(new EventHandler<MouseEvent>()
 		{
@@ -131,13 +160,16 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 							}
 							catch( QobuzError qe ) { System.out.println("Exception: " + qe.getMessage() ) ; return ; }
 							catch (InterruptedException e) { e.printStackTrace(); }
-
+							
+							if( LoginWindow.saveUserInfo )
+								user.setSave( true ) ;
+							
+							supplement.Settings.addUser(user);
+							supplement.Settings.writeUsers();
 							Platform.runLater(()->statusCode.setValue(1));
 
 						}
 					}).start();
-				
-				MainWindow.users.add(user);
 			}
 		});
 		
@@ -158,8 +190,10 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 		password = new LableTextField("Password:", 150, 17, LableTextField.POSITION.LEFT);
 		exitImage = new ImageView( new Image(MainWindow.class.getResourceAsStream("/exit.png")) );
 		status = new Label("") ;
+		saveUserLabel = new Label("Save login/password") ;
+		saveUserCheck = new CheckBox() ;
 		
-		loginPane.getChildren().addAll(login, password, loginButton, exitImage, status);
+		loginPane.getChildren().addAll(login, password, loginButton, exitImage, status, saveUserCheck, saveUserLabel);
 		this.setRoot(loginPane) ;
 	}
 }
