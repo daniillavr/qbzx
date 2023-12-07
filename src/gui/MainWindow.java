@@ -64,8 +64,9 @@ public class MainWindow extends Application
 	{
 		stage = arg0 ;
 		initStage( arg0 ) ;
-		setScene(0);
+		setScene(1);
 		chageScene();
+		/*
 		addChangeListenerTo(0, new ChangeListener<Integer>()
 		{
 			@Override
@@ -75,7 +76,7 @@ public class MainWindow extends Application
 				chageScene();
 			}
 			
-		});
+		});*/
 	}
 	
 	public void addSceneObject( Supplier<Supplement.sceneSupplement> supplier )
@@ -86,10 +87,5 @@ public class MainWindow extends Application
 	void setScene( int index )
 	{
 		currentScene = scenesSuppliers.get(index).get();
-	}
-	
-	void addChangeListenerTo(int index1 , ChangeListener el )
-	{
-		currentScene.getProperty(index1).addListener(el);
 	}
 }

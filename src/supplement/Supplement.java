@@ -40,7 +40,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.text.Font;
 import qobuz_api.QobuzApi;
-import qobuz_api.QobuzApi.loginInfo;
+import qobuz_api.QobuzApi.userInfo;
 
 public class Supplement {
 	
@@ -50,7 +50,6 @@ public class Supplement {
 		double			getWidth()			;
 		double			getHeight()			;
 		Scene			getScene()			;
-		<E> Property<E>	getProperty(E a)	;
 	}
 	
 	public enum statuses
@@ -60,14 +59,22 @@ public class Supplement {
 		GETTING_USER_AUTH("Getting user auth"),
 		GOT_USER_AUTH("Got user auth"),
 		ERROR("Error"),
-		NO_STATUS("No status");
+		NO_STATUS("No status"),
+		LOGGED("logged"),
+		NOT_LOGGED("Not logged");
 		
 		statuses(String status)
 		{
 			currentStatus = status ;
 		}
 		
-		public final String currentStatus ;
+		@Override
+		public String toString()
+		{
+			return currentStatus ;
+		}
+		
+		final String currentStatus ;
 	}
 	
 	static public Pane getViewPaneByType( String type , JSONObject obj)
@@ -118,7 +125,7 @@ public class Supplement {
 			else
 				this.image = new ImageView() ;
 			this.imageBorder = new Pane();
-			this.getChildren().addAll(this.title, this.performer, this.image, this.imageBorder, this.download);
+			this.getChildren().addAll( this.download, this.title, this.performer, this.image, this.imageBorder);
 			
 			Scene s = new Scene(this);
 			
@@ -159,23 +166,19 @@ public class Supplement {
 			this.title.setLayoutY( 10 );
 			this.title.setMaxWidth(this.prefWidth(-1) - this.title.getLayoutX() - 5);
 			
-			this.download.setOnMouseClicked(new EventHandler<MouseEvent>() {
-				@Override
-				public void handle(MouseEvent arg0) {
-					byte[] musicFile = QobuzApi.getFile(Dashboard.createInstance().getCurrentUser() , "track" , id , "27" ) ;
-					
-					File fl = new File("music.flac") ;
-					try(FileOutputStream  wf = new FileOutputStream (fl) )
-					{
-						wf.write(musicFile) ;
-					}
-					catch(Exception ex)
-					{
-						
-					}
-					setMusicInfo(fl , self) ;
+			this.download.setOnMouseClicked((Event) -> {
+				byte[] musicFile = QobuzApi.getFile(Dashboard.createInstance().getCurrentUser() , "track" , id , "27" ) ;
+				
+				File fl = new File("music.flac") ;
+				try(FileOutputStream  wf = new FileOutputStream (fl) )
+				{
+					wf.write(musicFile) ;
+				}
+				catch(Exception ex)
+				{
 					
 				}
+				setMusicInfo(fl , self) ;
 			});
 		}
 		
@@ -280,18 +283,12 @@ public class Supplement {
 			
 			this.backButton.setStyle("-fx-background-color: rgba(0,0,0,0.4); -fx-background-radius: 0; -fx-padding: 0; -fx-background-insets: 0;");
 			
-			this.backButton.setOnMouseClicked( new EventHandler<MouseEvent>()
-					{
-						@Override
-						public void handle(MouseEvent arg0)
-						{
-							Platform.runLater(() -> {
-								parent.getChildren().clear();
-								parent.getChildren().addAll(pChilds);
-								scrollPane.setVvalue(vPos);
-							});
-						}
-				
+			this.backButton.setOnMouseClicked( (Event) -> {
+						Platform.runLater(() -> {
+							parent.getChildren().clear();
+							parent.getChildren().addAll(pChilds);
+							scrollPane.setVvalue(vPos);
+						});
 					});
 			
 			Platform.runLater(() -> {

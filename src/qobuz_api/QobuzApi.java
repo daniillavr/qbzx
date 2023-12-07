@@ -16,11 +16,15 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import gui.LoginWindow;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleStringProperty;
+import qobuz_api.QobuzApi.QobuzError;
 import supplement.*;
 import supplement.Supplement.statuses;
 
@@ -55,13 +59,13 @@ public class QobuzApi
 		
 	}
 	
-	static public void getSecret( loginInfo info ) throws QobuzError
+	static public void getSecret( userInfo info ) throws QobuzError
 	{
 		try
 		{
-			info.getStatus().setValue(Supplement.statuses.GETTING_SECRET.currentStatus);
+			info.getStatus().setValue(Supplement.statuses.GETTING_SECRET.toString());
 			HttpClient cli = HttpClient.newBuilder()
-					.connectTimeout(Duration.ofSeconds(5))
+					.connectTimeout(Duration.ofSeconds(1))
 					.version(Version.HTTP_2)
 					.followRedirects(Redirect.NORMAL)
 					.build();
@@ -105,18 +109,18 @@ public class QobuzApi
 			System.out.println(info.getAppID());
 			
 			info.setAppSecret(new String(encoded, "UTF-8" ));
-			info.getStatus().setValue(Supplement.statuses.GOT_SECRET.currentStatus);
+			info.getStatus().setValue(Supplement.statuses.GOT_SECRET.toString());
 		}
 		catch( Exception ex )
 		{
-			info.getStatus().setValue(Supplement.statuses.ERROR.currentStatus);
+			info.getStatus().setValue(Supplement.statuses.ERROR.toString());
 			throw new QobuzError("Something went wrong when getting secret(Qobuz changed patterns...).");
 		}
 	}
 	
-	static public void getUserToken( loginInfo info ) throws QobuzError
+	static public void getUserToken( userInfo info ) throws QobuzError
 	{
-		info.getStatus().setValue(Supplement.statuses.GETTING_USER_AUTH.currentStatus);
+		info.getStatus().setValue(Supplement.statuses.GETTING_USER_AUTH.toString());
 		try
 		{
 			String str = new StringBuilder()
@@ -129,7 +133,7 @@ public class QobuzApi
 					.append(info.getAppID())
 					.toString();
 			HttpClient cli = HttpClient.newBuilder()
-					.connectTimeout(Duration.ofSeconds(5))
+					.connectTimeout(Duration.ofSeconds(1))
 					.version(Version.HTTP_2)
 					.followRedirects(Redirect.NORMAL).build();
 			HttpRequest req = HttpRequest.newBuilder()
@@ -145,13 +149,13 @@ public class QobuzApi
 		}
 		catch(Exception ex)
 		{
-			info.getStatus().setValue(Supplement.statuses.ERROR.currentStatus);
+			info.getStatus().setValue(Supplement.statuses.ERROR.toString());
 			throw new QobuzError("Something went wrong when getting user token.");
 		}
-		info.getStatus().setValue(Supplement.statuses.GOT_USER_AUTH.currentStatus);
+		info.getStatus().setValue(Supplement.statuses.GOT_USER_AUTH.toString());
 	}
 	
-	static public byte[] getImage(loginInfo info , String typeSearch , String id , String imageSize )
+	static public byte[] getImage(userInfo info , String typeSearch , String id , String imageSize )
 	{
 		System.out.println(typeSearch + " " + id + " " + imageSize);
 		byte[] str = null ;
@@ -200,6 +204,44 @@ public class QobuzApi
 		return str ;
 	}
 	
+	static public JSONObject getTrack(userInfo info , String id )
+	{
+		JSONObject	jsonObject = new JSONObject() ;
+		jsonObject.put("tracks", new JSONObject()) ;
+		jsonObject.getJSONObject("tracks").put( "items", new JSONArray()) ;
+		
+		System.out.println( id );
+		
+		try
+		{
+			String searchStr = new StringBuilder()
+					.append(qobuzAPI)
+					.append("track")
+					.append("/get?")
+					.append("track_id=")
+					.append(id.toString())
+					.append("&app_id=")
+					.append(info.getAppID())
+					.append("&user_auth_token=")
+					.append(info.getUserAuth())
+					.toString();
+			System.out.println(searchStr);
+			HttpClient cli = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).version(Version.HTTP_2).followRedirects(Redirect.NORMAL).build();
+			HttpRequest req = HttpRequest.newBuilder()
+					.uri(new URI(searchStr))
+				.GET().build();
+			HttpResponse<String> resp = cli.send(req, BodyHandlers.ofString());
+			
+			jsonObject.getJSONObject("tracks").getJSONArray("items").put( new JSONObject(new JSONTokener(new StringReader(resp.body()))) );
+		}
+		catch(Exception ex)
+		{
+			System.out.println("Excp:" + ex.getMessage());
+		}
+
+		return jsonObject ;
+	}
+	
 	static public byte[] getImage( JSONObject entity , String typeSearch , String imageSize )
 	{
 		byte[] str = null ;
@@ -225,7 +267,7 @@ public class QobuzApi
 		return str ;
 	}
 	
-	static public byte[] getFile( loginInfo info , String typeSearch , String id , String format )
+	static public byte[] getFile( userInfo info , String typeSearch , String id , String format )
 	{
 		byte[] str = null ;
 		JSONObject	jsonObject = null ;
@@ -284,7 +326,7 @@ public class QobuzApi
 		return str ;
 	}
 	
-	static public JSONObject search(loginInfo info , String typeSearch , String textSearch , Integer offset , Integer limitSearch )
+	static public JSONObject search(userInfo info , String typeSearch , String textSearch , Integer offset , Integer limitSearch )
 	{
 		JSONObject jsonObject = null ;
 		try
@@ -322,7 +364,40 @@ public class QobuzApi
 		return jsonObject ;
 	}
 	
-	static public class loginInfo
+	public static userInfo loginUser(String login, String password)
+	{
+		userInfo li = new userInfo( login, password, "" , "" ,"");
+		try
+		{
+			QobuzApi.getSecret(li);
+			QobuzApi.getUserToken(li);
+			Thread.sleep(1000);
+		}
+		catch( QobuzError qe ) { System.out.println("Exception: " + qe.getMessage() ) ; return null; }
+		catch (InterruptedException e) { e.printStackTrace(); }
+		
+		li.getStatus().setValue(Supplement.statuses.LOGGED.toString());
+		
+		return li ;
+	}
+	
+	public static userInfo loginUser(userInfo user)
+	{
+		try
+		{
+			QobuzApi.getSecret(user);
+			QobuzApi.getUserToken(user);
+			Thread.sleep(1000);
+		}
+		catch( QobuzError qe ) { System.out.println("Exception: " + qe.getMessage() ) ; return null; }
+		catch (InterruptedException e) { e.printStackTrace(); }
+		
+		user.getStatus().setValue(Supplement.statuses.LOGGED.toString());
+		
+		return user ;
+	}
+	
+	static public class userInfo
 	{
 		String						login		,
 									password	,
@@ -332,20 +407,20 @@ public class QobuzApi
 		boolean						saveInfo	;
 		public Property<String>		statusCode	;
 		
-		public loginInfo()
+		public userInfo()
 		{
 			login = password = appID = appSecret = userAuth = "";
-			statusCode = new SimpleStringProperty(statuses.NO_STATUS.currentStatus);
+			statusCode = new SimpleStringProperty(statuses.NO_STATUS.toString());
 		}
 		
-		public loginInfo( String l , String p , String id , String secret , String us )
+		public userInfo( String l , String p , String id , String secret , String us )
 		{
 			login = l ;
 			password = p ;
 			appID = id ;
 			appSecret = secret ;
 			userAuth = us ;
-			statusCode = new SimpleStringProperty(statuses.NO_STATUS.currentStatus);
+			statusCode = new SimpleStringProperty(statuses.NOT_LOGGED.toString());
 		}
 		
 		public void setLogin(String l) { login = l ; }
@@ -375,7 +450,7 @@ public class QobuzApi
 			if( o == null || this.getClass() != o.getClass() )
 				return false ;
 			
-			loginInfo li = (loginInfo)o ;
+			userInfo li = (userInfo)o ;
 			
 			return li.getLogin().equals( this.getLogin() ) && li.getPassword().equals( this.getPassword() ) ;
 		}

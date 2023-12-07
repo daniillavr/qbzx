@@ -11,13 +11,13 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import qobuz_api.QobuzApi;
-import qobuz_api.QobuzApi.loginInfo;
+import qobuz_api.QobuzApi.userInfo;
 
 public class Settings
 {
 	public static String downloadPath = "" ;
 	static String configFile = "config.cfg" ;
-	public static List<QobuzApi.loginInfo> users ;
+	public static List<QobuzApi.userInfo> users ;
 	
 	static void setDefaultValues()
 	{
@@ -26,7 +26,7 @@ public class Settings
 	
 	static
 	{
-		users = new LinkedList<QobuzApi.loginInfo>() ;
+		users = new LinkedList<QobuzApi.userInfo>() ;
 		try
 		{
 			File fl = new File(configFile) ;
@@ -42,7 +42,7 @@ public class Settings
 				{
 					JSONObject user = (JSONObject)ui ;
 
-					loginInfo li = new loginInfo(
+					userInfo li = new userInfo(
 							user.getString("login") ,
 							user.getString("password") ,
 							user.getString("appid") ,
@@ -73,7 +73,7 @@ public class Settings
 		}
 	}
 	
-	public static void addUser( loginInfo li )
+	public static void addUser( userInfo li )
 	{
 		if(!users.contains(li))
 			users.add(li) ;

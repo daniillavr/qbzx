@@ -14,6 +14,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.text.Font;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -22,7 +24,7 @@ import javafx.scene.layout.Pane;
 
 import qobuz_api.*;
 import qobuz_api.QobuzApi.QobuzError;
-import qobuz_api.QobuzApi.loginInfo;
+import qobuz_api.QobuzApi.userInfo;
 import supplement.Supplement;
 
 public class LoginWindow extends Scene implements Supplement.sceneSupplement
@@ -36,17 +38,15 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 									saveUserLabel						;
 	CheckBox						saveUserCheck						;
 	final String					name		= "Login window Qobuz"	;
-	static public IntegerProperty	statusCode							;
 	static final double				width		= 300					,
 									height		= 500					;
 	static LoginWindow				single								;
-	loginInfo						user								;
+	userInfo						user								;
 	static Boolean					saveUserInfo						;
 	
 	static
 	{
 		single = null ;
-		statusCode = new SimpleIntegerProperty(0);
 		saveUserInfo = false ;
 	}
 	
@@ -60,12 +60,6 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 	public Scene getScene()
 	{
 		return this ;
-	}
-	
-	@Override
-	public <E> Property<E> getProperty(E a)
-	{
-		return (Property<E>)statusCode ;
 	}
 	
 	static public LoginWindow createInstance()
@@ -104,13 +98,6 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 		password.setLayoutX( loginPane.getWidth() / 2 - password.getWidth() / 2 ) ;
 		password.setLayoutY( login.getLayoutY() + 40 );
 		
-		if( !supplement.Settings.users.isEmpty() )
-		{
-			login.setText(supplement.Settings.users.get(0).getLogin());
-			password.setText(supplement.Settings.users.get(0).getPassword());
-			saveUserCheck.fire();
-		}
-		
 		saveUserLabel.setLayoutX(this.getWidth() / 2 - ( saveUserLabel.getWidth() + 20 + saveUserCheck.getWidth() ) / 2 );
 		saveUserLabel.setLayoutY(password.getLayoutY() + 40 );
 		saveUserLabel.setStyle("-fx-text-fill: white; -fx-background-radius: 0; -fx-padding: 0;");
@@ -124,53 +111,19 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 		status.setLayoutY(loginButton.getLayoutY() + loginButton.prefHeight(-1) + 10 );
 		status.setStyle("-fx-text-fill: white; -fx-alignment:center;");
 		
-		saveUserCheck.setOnAction( new EventHandler<ActionEvent>() 
-				{
-					@Override
-					public void handle(ActionEvent event) {
-						LoginWindow.saveUserInfo = !LoginWindow.saveUserInfo ;
-					}
+		saveUserCheck.setOnAction( (Event) -> {
+					LoginWindow.saveUserInfo = !LoginWindow.saveUserInfo ;
 				});
 		
-		loginButton.setOnMouseClicked(new EventHandler<MouseEvent>()
-		{
-			@Override
-			public void handle(MouseEvent arg0)
-			{
-				user = new loginInfo() ;
-				
-				user.getStatus().addListener(new ChangeListener<String>() {
-					@Override
-					public void changed(ObservableValue<? extends String> arg0, String arg1, String arg2)
-					{
-						Platform.runLater(() -> status.setText(arg2));
-					}
-				});
-				
-				
-				user.setLogin(login.getText());
-				user.setPassword(password.getText());
-				new Thread(new Runnable() {
-						public void run() {
-							try
-							{
-								QobuzApi.getSecret(user);
-								QobuzApi.getUserToken(user);
-								Thread.sleep(1000);
-							}
-							catch( QobuzError qe ) { System.out.println("Exception: " + qe.getMessage() ) ; return ; }
-							catch (InterruptedException e) { e.printStackTrace(); }
-							
-							if( LoginWindow.saveUserInfo )
-								user.setSave( true ) ;
-							
-							supplement.Settings.addUser(user);
-							supplement.Settings.writeUsers();
-							Platform.runLater(()->statusCode.setValue(1));
-
-						}
-					}).start();
-			}
+		loginButton.setOnMouseClicked( (Event) -> {
+					user = new userInfo() ;
+					
+					user.setLogin(login.getText());
+					user.setPassword(password.getText());
+					user.setSave(saveUserCheck.isArmed());
+					
+					supplement.Settings.addUser(user);
+					Platform.runLater( () -> this.getRoot().getScene().windowProperty().get().fireEvent( new WindowEvent(this.getRoot().getScene().windowProperty().get() , WindowEvent.WINDOW_CLOSE_REQUEST) ) );
 		});
 		
 		exitImage.setOnMouseClicked(new EventHandler<MouseEvent>() {
@@ -232,7 +185,9 @@ class LableTextField extends Pane
 		
 		text.setFont(new Font(fonth));
 		field.setFont(new Font(fonth));
-		this.getChildren().forEach(x -> x.applyCss());
+		
+		this.applyCss() ;
+		this.layout();
 		
 		field.setPrefSize(fw, text.prefHeight(-1));
 		switch( pos )

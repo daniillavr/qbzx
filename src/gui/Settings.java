@@ -1,5 +1,6 @@
 package gui;
 
+import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -9,6 +10,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.WindowEvent;
 import supplement.Supplement;
 
 public class Settings extends Stage
@@ -52,15 +54,9 @@ public class Settings extends Stage
 		downloadPathField.setStyle("-fx-background-color: rgba(0,0,0,0.4); -fx-background-radius: 0; -fx-padding: 0;");
 		saveButton.setStyle("-fx-background-color: rgba(0,0,0,0.4); -fx-background-radius: 0; -fx-padding: 0; -fx-background-insets: 0;");
 		
-		Stage self = this ;
-		saveButton.setOnMouseClicked(new EventHandler<MouseEvent>()
-				{
-					Stage settingsStage = self ; 
-					@Override
-					public void handle(MouseEvent event) {
+		saveButton.setOnMouseClicked((Event) -> {
 						supplement.Settings.downloadPath = downloadPathField.getText() ;
-						settingsStage.close() ;
-					}
+						Platform.runLater( () -> this.close() );
 				});
 		
 		downloadPathField.setText(supplement.Settings.downloadPath);
