@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,10 +22,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import gui.LoginWindow;
 import javafx.beans.property.Property;
-import javafx.beans.property.SimpleStringProperty;
-import qobuz_api.QobuzApi.QobuzError;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.util.Pair;
 import supplement.*;
 import supplement.Supplement.statuses;
 
@@ -33,12 +33,26 @@ public class QobuzApi
 	static String													qobuzURL		=	"https://play.qobuz.com"					;
 	static String													qobuzAPI		=	"https://www.qobuz.com/api.json/0.2/"		;
 	public final static List<String>								imageSizes		=	List.of( "small" , "thumbnail" , "large" )	;
-	public final static List<Integer>								audioFormats	=	List.of( 5 , 6 , 7 , 27 )					;
+	public final static List<Pair<String, Integer>>					audioFormats	=	List.of(
+			new Pair<String, Integer>("mp3 320" , 5) ,
+			new Pair<String, Integer>("flac" , 6) ,
+			new Pair<String, Integer>("flac 24b/96k" , 7) ,
+			new Pair<String, Integer>("flac 24b/96k-192k" , 27)
+			)																														;
+	public final static BiFunction<Double, Double, Integer>			FormatByArg		=
+			(bit, khz) -> {
+				if( bit <= 16.0 )
+					return 6 ;
+				if( khz <= 96.0 )
+					return 7 ;
+				else
+					return 27 ;
+			} ;
 	public final static List<String>								typesSearch		=	
 			List.of( "Track" , "Artist" , "Album" , "Article" )																		;
 	final static Map<String, Function<JSONObject, JSONObject>>		imagePath		=	Map.ofEntries(
 			Map.entry("track", jsonObj -> {
-				return jsonObj.getJSONObject("album").getJSONObject("image")													;
+				return jsonObj.getJSONObject("album").getJSONObject("image")														;
 			}),
 			Map.entry("album", jsonObj -> {
 				return jsonObj.getJSONObject("image")																				;
@@ -61,9 +75,12 @@ public class QobuzApi
 	
 	static public void getSecret( userInfo info ) throws QobuzError
 	{
+		if( info == null )
+			return ;
+		
 		try
 		{
-			info.getStatus().setValue(Supplement.statuses.GETTING_SECRET.toString());
+			info.getStatus().setValue(Supplement.statuses.GETTING_SECRET);
 			HttpClient cli = HttpClient.newBuilder()
 					.connectTimeout(Duration.ofSeconds(1))
 					.version(Version.HTTP_2)
@@ -109,18 +126,21 @@ public class QobuzApi
 			System.out.println(info.getAppID());
 			
 			info.setAppSecret(new String(encoded, "UTF-8" ));
-			info.getStatus().setValue(Supplement.statuses.GOT_SECRET.toString());
+			info.getStatus().setValue(Supplement.statuses.GOT_SECRET);
 		}
 		catch( Exception ex )
 		{
-			info.getStatus().setValue(Supplement.statuses.ERROR.toString());
+			info.getStatus().setValue(Supplement.statuses.ERROR);
 			throw new QobuzError("Something went wrong when getting secret(Qobuz changed patterns...).");
 		}
 	}
 	
 	static public void getUserToken( userInfo info ) throws QobuzError
 	{
-		info.getStatus().setValue(Supplement.statuses.GETTING_USER_AUTH.toString());
+		if( info == null )
+			return ;
+		
+		info.getStatus().setValue(Supplement.statuses.GETTING_USER_AUTH);
 		try
 		{
 			String str = new StringBuilder()
@@ -149,14 +169,17 @@ public class QobuzApi
 		}
 		catch(Exception ex)
 		{
-			info.getStatus().setValue(Supplement.statuses.ERROR.toString());
+			info.getStatus().setValue(Supplement.statuses.ERROR);
 			throw new QobuzError("Something went wrong when getting user token.");
 		}
-		info.getStatus().setValue(Supplement.statuses.GOT_USER_AUTH.toString());
+		info.getStatus().setValue(Supplement.statuses.GOT_USER_AUTH);
 	}
 	
 	static public byte[] getImage(userInfo info , String typeSearch , String id , String imageSize )
 	{
+		if( info == null )
+			return null ;
+		
 		System.out.println(typeSearch + " " + id + " " + imageSize);
 		byte[] str = null ;
 		JSONObject	jsonObject = null ;
@@ -206,6 +229,9 @@ public class QobuzApi
 	
 	static public JSONObject getTrack(userInfo info , String id )
 	{
+		if( info == null )
+			return null ;
+		
 		JSONObject	jsonObject = new JSONObject() ;
 		jsonObject.put("tracks", new JSONObject()) ;
 		jsonObject.getJSONObject("tracks").put( "items", new JSONArray()) ;
@@ -242,6 +268,44 @@ public class QobuzApi
 		return jsonObject ;
 	}
 	
+	static public JSONObject getInfo(userInfo info , String type , String id )
+	{	
+		if( info == null )
+			return null ;
+		
+		JSONObject jsonObject ;
+		
+		try
+		{
+			String searchStr = new StringBuilder()
+					.append(qobuzAPI)
+					.append(type)
+					.append("/get?")
+					.append(type + "_id=")
+					.append(id.toString())
+					.append("&app_id=")
+					.append(info.getAppID())
+					.append("&user_auth_token=")
+					.append(info.getUserAuth())
+					.toString();
+			System.out.println(searchStr);
+			HttpClient cli = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).version(Version.HTTP_2).followRedirects(Redirect.NORMAL).build();
+			HttpRequest req = HttpRequest.newBuilder()
+					.uri(new URI(searchStr))
+				.GET().build();
+			HttpResponse<String> resp = cli.send(req, BodyHandlers.ofString());
+			
+			jsonObject = new JSONObject(new JSONTokener(new StringReader(resp.body())));
+		}
+		catch(Exception ex)
+		{
+			jsonObject = null ;
+			System.out.println("Excp:" + ex.getMessage());
+		}
+
+		return jsonObject ;
+	}
+	
 	static public byte[] getImage( JSONObject entity , String typeSearch , String imageSize )
 	{
 		byte[] str = null ;
@@ -267,9 +331,11 @@ public class QobuzApi
 		return str ;
 	}
 	
-	static public byte[] getFile( userInfo info , String typeSearch , String id , String format )
+	static public JSONObject getAudioInfo( userInfo info , String typeSearch , String id , String format )
 	{
-		byte[] str = null ;
+		if( info == null )
+			return null ;
+		
 		JSONObject	jsonObject = null ;
 		
 		try
@@ -307,19 +373,36 @@ public class QobuzApi
 			HttpClient cli = HttpClient.newBuilder().version(Version.HTTP_2).followRedirects(Redirect.NORMAL).build();
 			HttpRequest req = HttpRequest.newBuilder()
 					.uri(new URI(searchStr))
-				.GET().build();
+					.GET().build();
 			HttpResponse<String> resp = cli.send(req, BodyHandlers.ofString());
 			
 			jsonObject = new JSONObject(new JSONTokener(new StringReader(resp.body())));
-			
-			try(var iss = new URI(jsonObject.getString("url")).toURL().openStream();)
+		}
+		catch(Exception ex)
+		{
+			jsonObject = null ;
+			System.out.println("Excp:" + ex.getMessage());
+		}
+
+		return jsonObject ;
+	}
+	
+	static public byte[] getAudioFile( userInfo info , String id , String format )
+	{
+		if( info == null )
+			return null ;
+		
+		byte[] str = null ;
+		
+		try
+		{
+			try(var iss = new URI( getAudioInfo( info , "track" , id, format).getString("url") ).toURL().openStream();)
 			{
 				str = iss.readAllBytes();
 			}
 		}
 		catch(Exception ex)
 		{
-			jsonObject = null ;
 			System.out.println("Excp:" + ex.getMessage());
 		}
 
@@ -328,6 +411,9 @@ public class QobuzApi
 	
 	static public JSONObject search(userInfo info , String typeSearch , String textSearch , Integer offset , Integer limitSearch )
 	{
+		if( info == null )
+			return null ;
+		
 		JSONObject jsonObject = null ;
 		try
 		{
@@ -340,8 +426,7 @@ public class QobuzApi
 					.append(offset.toString())
 					.append("&query=")
 					.append(textSearch.replace(" ", "%20"))
-					.append("&limit=")
-					.append(limitSearch.toString())
+					.append(limitSearch > 0 ? "&limit=" + limitSearch.toString() : "")
 					.append("&user_auth_token=")
 					.append(info.getUserAuth())
 					.toString();
@@ -376,7 +461,7 @@ public class QobuzApi
 		catch( QobuzError qe ) { System.out.println("Exception: " + qe.getMessage() ) ; return null; }
 		catch (InterruptedException e) { e.printStackTrace(); }
 		
-		li.getStatus().setValue(Supplement.statuses.LOGGED.toString());
+		li.getStatus().setValue(Supplement.statuses.LOGGED);
 		
 		return li ;
 	}
@@ -392,25 +477,25 @@ public class QobuzApi
 		catch( QobuzError qe ) { System.out.println("Exception: " + qe.getMessage() ) ; return null; }
 		catch (InterruptedException e) { e.printStackTrace(); }
 		
-		user.getStatus().setValue(Supplement.statuses.LOGGED.toString());
+		user.getStatus().setValue(Supplement.statuses.LOGGED);
 		
 		return user ;
 	}
 	
 	static public class userInfo
 	{
-		String						login		,
-									password	,
-									appID		,
-									appSecret	,
-									userAuth	;
-		boolean						saveInfo	;
-		public Property<String>		statusCode	;
+		String							login		,
+										password	,
+										appID		,
+										appSecret	,
+										userAuth	;
+		boolean							saveInfo	;
+		public Property<statuses>		statusCode	;
 		
 		public userInfo()
 		{
 			login = password = appID = appSecret = userAuth = "";
-			statusCode = new SimpleStringProperty(statuses.NO_STATUS.toString());
+			statusCode = new SimpleObjectProperty<statuses>(statuses.NO_STATUS);
 		}
 		
 		public userInfo( String l , String p , String id , String secret , String us )
@@ -420,7 +505,7 @@ public class QobuzApi
 			appID = id ;
 			appSecret = secret ;
 			userAuth = us ;
-			statusCode = new SimpleStringProperty(statuses.NOT_LOGGED.toString());
+			statusCode = new SimpleObjectProperty<statuses>(statuses.NOT_LOGGED);
 		}
 		
 		public void setLogin(String l) { login = l ; }
@@ -430,13 +515,13 @@ public class QobuzApi
 		public void setUserAuth(String us) { userAuth = us ; }
 		public void setSave(boolean save) { saveInfo = save ; }
 		
-		public String 			getLogin() { return login ; }
-		public String 			getPassword() { return password ; }
-		public String 			getAppID() { return appID ; }
-		public String 			getAppSecret() { return appSecret ; }
-		public String 			getUserAuth() { return userAuth ; }
-		public boolean			getSave() { return saveInfo ; }
-		public Property<String>	getStatus() { return statusCode ; }
+		public String 				getLogin() { return login ; }
+		public String 				getPassword() { return password ; }
+		public String 				getAppID() { return appID ; }
+		public String 				getAppSecret() { return appSecret ; }
+		public String 				getUserAuth() { return userAuth ; }
+		public boolean				getSave() { return saveInfo ; }
+		public Property<statuses>	getStatus() { return statusCode ; }
 		
 		@Override
 		public String toString()

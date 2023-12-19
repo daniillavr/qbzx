@@ -126,12 +126,8 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 					Platform.runLater( () -> this.getRoot().getScene().windowProperty().get().fireEvent( new WindowEvent(this.getRoot().getScene().windowProperty().get() , WindowEvent.WINDOW_CLOSE_REQUEST) ) );
 		});
 		
-		exitImage.setOnMouseClicked(new EventHandler<MouseEvent>() {
-			@Override
-			public void handle(MouseEvent arg0)
-			{
-				Platform.exit();
-			}
+		exitImage.setOnMouseClicked(Event -> {
+			((Stage)this.getWindow()).close();
 		});
 	}
 	
