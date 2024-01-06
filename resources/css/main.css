@@ -1,0 +1,234 @@
+/* START Login window */
+
+.login-label,
+.login-button,
+.password-label,
+.login-field,
+.password-field,
+.save-user-checkbox,
+.save-user-label {
+	-fx-font-size: 17 ;
+}
+
+.login-field,
+.login-button,
+.save-user-label,
+.save-user-checkbox .box {
+	-fx-background-radius: 0;
+	-fx-padding: 0;
+	-fx-background-insets: 0;
+}
+
+.login-field,
+.login-button,
+.save-user-checkbox .box {
+	-fx-background-color: rgba(255,255,255,0.4);
+}
+
+.save-user-checkbox {
+	-fx-border-width: 0;
+	-fx-border-radius: 0;
+	-fx-border-insets: 0;
+}
+
+.save-user-checkbox:selected {
+	-fx-border-width: 0;
+	-fx-border-radius: 0;
+	-fx-border-insets: 0;
+}
+
+.save-user-checkbox .box {
+	-fx-border-color: transparent;
+}
+
+.save-user-checkbox .mark {
+ 	-fx-shape: "M 2 0 l 3 3 l 3 -3 l 1 0 l -3.5 3.5 l 3.5 3.5 l -1 0 l -3 -3 l -3 3 l -1 0 l 3.5 -3.5 l -3.5 -3.5 M -1 9 L 11 9 M 11 -1 L -1 -1";
+}
+
+.save-user-checkbox:selected .mark {
+	-fx-background-color: rgba(0,0,0,0.7);
+}
+
+.save-user-checkbox:selected .box {
+	-fx-background-color: rgba(255,255,255,0.7);
+	-fx-border-width: 0;
+	-fx-border-radius: 0;
+	-fx-border-insets: 0;
+}
+
+.login-field {
+	-fx-text-fill: white;
+}
+
+.login-label {
+	-fx-text-fill: white;
+}
+
+.save-user-label {
+	-fx-text-fill: white;
+}
+
+.login-pane> .exit-button {
+	-fx-shape: "M 2 0 l 3 3 l 3 -3 l 1 0 l -3.5 3.5 l 3.5 3.5 l -1 0 l -3 -3 l -3 3 l -1 0 l 3.5 -3.5 l -3.5 -3.5 M -1 9 L 11 9 M 11 -1 L -1 -1";
+	-fx-border-color: red ;
+	-fx-padding: 0;
+}
+
+.login-pane > .exit-button:armed {
+	-fx-border-color: black ;
+}
+
+/* END Login window */
+
+
+
+/* START Dashboard window */
+
+.all-pages-label,
+.current-page-label,
+.delimiter-page-label,
+.next-page-button,
+.prev-page-button,
+.find-field,
+.list-infold-button,
+.settings-button {
+	-fx-font-size: 17;
+}
+
+.all-pages-label,
+.current-page-label,
+.delimiter-page-label,
+.next-page-button,
+.prev-page-button,
+.find-field,
+.list-infold-button,
+.type-seacrh-combobox,
+.find-combobox,
+.settings-button,
+.audio-formats-combobox,
+.list-input-field,
+.users-change-button,
+.users-combobox,
+.view-element > .title-label .tooltip {
+	-fx-background-radius: 0;
+	-fx-padding: 0;
+	-fx-background-insets: 0;
+}
+
+.all-pages-label,
+.current-page-label,
+.delimiter-page-label,
+.next-page-button,
+.prev-page-button,
+.find-field,
+.list-infold-button,
+.type-seacrh-combobox,
+.find-combobox,
+.settings-button,
+.audio-formats-combobox,
+.list-input-field,
+.users-change-button,
+.users-combobox,
+.dashboard-pane > .content-pane,
+.view-element > .download-button {
+	-fx-background-color: rgba(0,0,0,0.4);
+}
+
+.all-pages-label,
+.current-page-label,
+.delimiter-page-label,
+.view-element > .title-label .tooltip {
+	-fx-text-fill: black;
+}
+
+.users-combobox > .combo-box-popup .list-cell {
+	-fx-background-color: transparent ;
+}
+
+.users-combobox > .combo-box-popup .list-cell:hover {
+	-fx-background-color: rgba(0, 0, 0.6 , 0.3) ;
+}
+
+.dashboard-pane > .content-pane {
+	-fx-vbar-policy: never;
+}
+
+.draggable-pane {
+	-fx-background-color: rgba(0.1, 0.1, 0.1, 0.1, 0.4);
+}
+
+.image-border-pane {
+	-fx-border-color: black;
+	-fx-border-style: solid;
+	-fx-border-width: 1;
+}
+
+.view-element > .title-label {
+	-fx-text-fill: rgba(150 ,150, 150 , 1.0) ;
+}
+.view-element {
+	-fx-border-color: black;
+}
+
+.view-element > .title-label .tooltip {
+	-fx-background-color: transparent;
+	-fx-show-duration: 120s
+}
+
+.view-element > .download-button {
+	-fx-background-radius: 0;
+	-fx-background-insets: 0;
+}
+
+.dashboard-pane > .exit-button {
+	-fx-shape: "M 2 0 l 3 3 l 3 -3 l 1 0 l -3.5 3.5 l 3.5 3.5 l -1 0 l -3 -3 l -3 3 l -1 0 l 3.5 -3.5 l -3.5 -3.5 M -1 9 L 11 9 M 11 -1 L -1 -1";
+	-fx-border-color: red ;
+	-fx-padding: 0;
+}
+
+.dashboard-pane > .exit-button:armed {
+	-fx-border-color: black ;
+}
+
+/* END Dashboard window */
+
+/* START Settings window */
+
+.download-path-label,
+.download-path-field,
+.save-button,
+.choose-dir-button {
+	-fx-font-size: 17;
+}
+
+.settings-pane > .settings-content-pane {
+	-fx-border-width: 2;
+	-fx-border-color: grey;
+}
+
+.download-path-label,
+.download-path-field,
+.save-button,
+.choose-dir-button {
+	-fx-background-radius: 0;
+	-fx-padding: 0;
+	-fx-background-insets: 0;
+}
+
+.download-path-field,
+.save-button,
+.choose-dir-button {
+	-fx-background-color: rgba(0,0,0,0.4);
+}
+
+.settings-pane > .exit-button {
+	-fx-shape: "M 2 0 l 3 3 l 3 -3 l 1 0 l -3.5 3.5 l 3.5 3.5 l -1 0 l -3 -3 l -3 3 l -1 0 l 3.5 -3.5 l -3.5 -3.5 M -1 9 L 11 9 M 11 -1 L -1 -1";
+	-fx-border-color: red ;
+	-fx-padding: 0;
+}
+
+.settings-pane > .exit-button:armed {
+	-fx-border-color: black ;
+}
+
+/* END Settings window */

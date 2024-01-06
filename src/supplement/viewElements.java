@@ -52,29 +52,49 @@ public class viewElements
 			height = 80 ;
 		}
 		
-		baseEntry( JSONObject json , byte[] image , String performer , String label , String _id , Integer quality )
+		void configCss()
+		{
+			getStyleClass().add("view-element") ;
+			
+			title.getStyleClass().add("title-label") ;
+			performer.getStyleClass().add("performer-label") ;
+			
+			image.getStyleClass().add("image-imageview") ;
+			
+			imageBorder.getStyleClass().add("image-border-pane") ;
+			
+			download.getStyleClass().add("download-button") ;
+			
+			audioFormats.getStyleClass().add("audio-formats-combobox") ;
+		}
+		
+		baseEntry( JSONObject json , byte[] img , String per , String label , String _id , Integer quality )
 		{
 			super();
 			
-			info = json ;
-			this.title = new Label( label ) ;
-			this.id = _id ;
-			this.audioFormats = new ComboBox<>();
+			info			= json					;
+			title			= new Label( label )	;
+			id				= _id					;
+			audioFormats	= new ComboBox<>()		;
+			imageBorder		= new Pane()			;
+			download		= new Button("Download");
+			performer		= new Label( per )		;
 			
-			this.download = new Button("Download");
-			this.performer = new Label( performer ) ;
-			if(image != null)
-				this.image = new ImageView(new Image( new ByteArrayInputStream( image ) ) );
+			if(img != null)
+				image = new ImageView(new Image( new ByteArrayInputStream( img ) ) );
 			else
-				this.image = new ImageView() ;
-			this.imageBorder = new Pane();
-			this.getChildren().addAll( this.download, this.title, this.performer, this.image, this.imageBorder, this.audioFormats);
+				image = new ImageView() ;
+			
+			setPrefHeight( height );
+			setPrefWidth( width );
+			
+			configCss() ;
+			
+			getChildren().addAll( download, title, performer, image, imageBorder, audioFormats);
 			
 			Scene s = new Scene(this);
 			
-			this.setStyle("-fx-border-color: black;");
-			
-			this.audioFormats.setConverter(new StringConverter<Pair<String, Integer>>() {
+			audioFormats.setConverter(new StringConverter<Pair<String, Integer>>() {
 				@Override
 				public String toString(Pair<String, Integer> object) {
 					if(object == null)
@@ -86,47 +106,40 @@ public class viewElements
 				public Pair<String, Integer> fromString(String string) {return null;}
 			});
 			
-			this.imageBorder.setPrefHeight(72);
-			this.imageBorder.setPrefWidth(72);
-			this.imageBorder.setLayoutX(4);
-			this.imageBorder.setLayoutY(4);
-			this.imageBorder.setStyle("-fx-border-color: black; -fx-border-style: solid; -fx-border-width: 1;");
-			this.imageBorder.applyCss();
+			imageBorder.setPrefHeight(72);
+			imageBorder.setPrefWidth(72);
+			imageBorder.setLayoutX(4);
+			imageBorder.setLayoutY(4);
 			
-			this.download.setStyle("-fx-background-color: rgba(0,0,0,0.4); -fx-background-radius: 0; -fx-padding: 5; -fx-background-insets: 0;");
+			title.setTooltip(new Tooltip(json.getString("title")) );
 			
-			this.title.setTooltip(new Tooltip(json.getString("title")) );
-			this.title.getTooltip().setStyle("-fx-background-color: rgba(0,0,0,0); -fx-background-radius: 0; -fx-padding: 0; -fx-text-fill:black; -fx-show-duration: 120s");
+			image.setFitHeight(70);
+			image.setFitWidth(70);
+			image.setLayoutX(5);
+			image.setLayoutY(5);
 			
-			this.setPrefHeight( height );
-			this.setPrefWidth( width );
-			this.image.setFitHeight(70);
-			this.image.setFitWidth(70);
-			this.image.setLayoutX(5);
-			this.image.setLayoutY(5);
+			performer.setLayoutX( this.image.getFitWidth() + 10 );
+			performer.setLayoutY( 10 );
 			
-			this.performer.setLayoutX( this.image.getFitWidth() + 10 );
-			this.performer.setLayoutY( 10 );
+			audioFormats.getItems().addAll(QobuzApi.audioFormats.stream().filter(x -> x.getValue() <= quality).toList());
+			audioFormats.setValue(this.audioFormats.getItems().get(this.audioFormats.getItems().size() - 1));
 			
-			//this.performer.setStyle("-fx-padding: 0");
-			this.title.setStyle("-fx-text-fill: rgba(150 ,150, 150 , 1.0) ;");
-			this.audioFormats.getItems().addAll(QobuzApi.audioFormats.stream().filter(x -> x.getValue() <= quality).toList());
-			this.audioFormats.setValue(this.audioFormats.getItems().get(this.audioFormats.getItems().size() - 1));
-			this.audioFormats.setStyle("-fx-background-color: rgba(0,0,0,0.4); -fx-background-radius: 0; -fx-padding: 0;");
-			
-			this.applyCss();
-			this.layout();
+			applyCss();
+			layout();
 
-			this.download.setLayoutX(this.prefWidth(-1) - this.download.prefWidth(-1));
-			this.download.setLayoutY(this.prefHeight(-1) - this.download.prefHeight(-1));
+			download.setLayoutX(this.prefWidth(-1) - this.download.prefWidth(-1));
+			download.setLayoutY(this.prefHeight(-1) - this.download.prefHeight(-1));
 			
-			this.audioFormats.setPrefHeight(this.download.prefHeight(-1));
-			this.audioFormats.setLayoutX( this.download.getLayoutX() - this.audioFormats.prefWidth(-1) - 10 );
-			this.audioFormats.setLayoutY( this.prefHeight(-1) - this.audioFormats.prefHeight(-1) );
+			audioFormats.setPrefHeight(this.download.prefHeight(-1));
+			audioFormats.setLayoutX( this.download.getLayoutX() - this.audioFormats.prefWidth(-1) - 10 );
+			audioFormats.setLayoutY( this.prefHeight(-1) - this.audioFormats.prefHeight(-1) );
+			audioFormats.setTooltip(new Tooltip());
+			audioFormats.getTooltip().setText("MP3 = MP3 320\nFLAC = FLAC Lossless\nFLAC+ = FLAC Hi-Res 24 bit =< 96kHz\nFLAC++ = FLAC Hi-Res 24 bit >96 kHz & =< 192 kHz") ;
 			
-			this.title.setLayoutX( this.performer.getLayoutX() + this.performer.prefWidth(-1) +  5 );
-			this.title.setLayoutY( 10 );
-			this.title.setMaxWidth(this.prefWidth(-1) - this.title.getLayoutX() - 5);
+			
+			title.setLayoutX( this.performer.getLayoutX() + this.performer.prefWidth(-1) +  5 );
+			title.setLayoutY( 10 );
+			title.setMaxWidth(this.prefWidth(-1) - this.title.getLayoutX() - 5);
 		}
 		
 		public String getTitle()
@@ -137,7 +150,7 @@ public class viewElements
 	
 	static non-sealed class musicEntry extends baseEntry
 	{	
-		musicEntry( JSONObject jsonMusic , byte[] image )
+		musicEntry( JSONObject jsonMusic , byte[] image ) throws InterruptedException
 		{
 			super(	jsonMusic, 
 					image, 
@@ -148,13 +161,12 @@ public class viewElements
 					);
 			
 			super.download.setOnMouseClicked((Event) -> {
-				Supplement.createFileAndSet(info, Path.of(info.getJSONObject("performer").getString("name"), "tracks"), Integer.valueOf( super.audioFormats.getValue().getValue() ).toString() , super.audioFormats.getValue().getKey().split(" ")[0] ) ;
+				try {
+					Supplement.createFileAndSet(info, Path.of(supplement.Settings.downloadPath, info.getJSONObject("performer").getString("name"), "tracks"), Integer.valueOf( super.audioFormats.getValue().getValue() ).toString() , super.audioFormats.getValue().getKey().split(" ")[0] ) ;
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			});
-		}
-		
-		public String getTitle()
-		{
-			return title.getText() ;
 		}
 	}
 	
@@ -171,13 +183,18 @@ public class viewElements
 					);
 			
 			super.download.setOnMouseClicked((Event) -> {
-				JSONObject album = QobuzApi.getInfo(Dashboard.createInstance().getCurrentUser(), "album", id) ;
+				JSONObject album;
+				try {
+					album = QobuzApi.getInfo(Dashboard.createInstance().getCurrentUser(), "album", id);
 				
 				for(var elem : album.getJSONObject("tracks").getJSONArray("items"))
 				{
 					JSONObject music = (JSONObject)elem ;
 					music.put("album", info);
-					Supplement.createFileAndSet(music, Path.of(info.getJSONObject("artist").getString("name"), info.getString("title")), Integer.valueOf( super.audioFormats.getValue().getValue() ).toString() , super.audioFormats.getValue().getKey().split(" ")[0] ) ;
+					Supplement.createFileAndSet(music, Path.of(supplement.Settings.downloadPath, info.getJSONObject("artist").getString("name"), info.getString("title")), Integer.valueOf( super.audioFormats.getValue().getValue() ).toString() , super.audioFormats.getValue().getKey().split(" ")[0] ) ;
+				}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
 			});
 		}

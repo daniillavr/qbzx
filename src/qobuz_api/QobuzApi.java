@@ -1,12 +1,15 @@
 package qobuz_api;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.*;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpClient.Version;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -34,10 +37,10 @@ public class QobuzApi
 	static String													qobuzAPI		=	"https://www.qobuz.com/api.json/0.2/"		;
 	public final static List<String>								imageSizes		=	List.of( "small" , "thumbnail" , "large" )	;
 	public final static List<Pair<String, Integer>>					audioFormats	=	List.of(
-			new Pair<String, Integer>("mp3 320" , 5) ,
-			new Pair<String, Integer>("flac" , 6) ,
-			new Pair<String, Integer>("flac 24b/96k" , 7) ,
-			new Pair<String, Integer>("flac 24b/96k-192k" , 27)
+			new Pair<String, Integer>("MP3" , 5)				,	// mp3 320
+			new Pair<String, Integer>("FLAC" , 6)				,	// flac? Mb 16b?, like MP3 but without compression?
+			new Pair<String, Integer>("FLAC +" , 7)				,	// flac 24b/44.1-96k
+			new Pair<String, Integer>("FLAC ++" , 27)				// flac 24b/96k-192k
 			)																														;
 	public final static BiFunction<Double, Double, Integer>			FormatByArg		=
 			(bit, khz) -> {
@@ -175,7 +178,7 @@ public class QobuzApi
 		info.getStatus().setValue(Supplement.statuses.GOT_USER_AUTH);
 	}
 	
-	static public byte[] getImage(userInfo info , String typeSearch , String id , String imageSize )
+	static public byte[] getImage(userInfo info , String typeSearch , String id , String imageSize ) throws InterruptedException
 	{
 		if( info == null )
 			return null ;
@@ -218,16 +221,19 @@ public class QobuzApi
 				str = iss.readAllBytes();
 			}
 		}
-		catch(Exception ex)
+		catch(IOException | URISyntaxException ex)
 		{
-			jsonObject = null ;
-			System.out.println("Excp:" + ex.getMessage());
+			System.out.println("getImage Excp:" + ex.getMessage());
+		}
+		catch(InterruptedException ex)
+		{
+			throw ex ;
 		}
 
 		return str ;
 	}
 	
-	static public JSONObject getTrack(userInfo info , String id )
+	static public JSONObject getTrack(userInfo info , String id ) throws InterruptedException
 	{
 		if( info == null )
 			return null ;
@@ -260,15 +266,19 @@ public class QobuzApi
 			
 			jsonObject.getJSONObject("tracks").getJSONArray("items").put( new JSONObject(new JSONTokener(new StringReader(resp.body()))) );
 		}
-		catch(Exception ex)
+		catch(IOException | URISyntaxException ex)
 		{
-			System.out.println("Excp:" + ex.getMessage());
+			jsonObject = null ;
+			System.out.println("getTrack Excp:" + ex.getMessage());
 		}
-
+		catch(InterruptedException ex)
+		{
+			throw ex ;
+		}
 		return jsonObject ;
 	}
 	
-	static public JSONObject getInfo(userInfo info , String type , String id )
+	static public JSONObject getInfo(userInfo info , String type , String id ) throws InterruptedException
 	{	
 		if( info == null )
 			return null ;
@@ -297,10 +307,14 @@ public class QobuzApi
 			
 			jsonObject = new JSONObject(new JSONTokener(new StringReader(resp.body())));
 		}
-		catch(Exception ex)
+		catch(IOException | URISyntaxException ex)
 		{
 			jsonObject = null ;
-			System.out.println("Excp:" + ex.getMessage());
+			System.out.println("getInfo Excp:" + ex.getMessage());
+		}
+		catch(InterruptedException ex)
+		{
+			throw ex ;
 		}
 
 		return jsonObject ;
@@ -322,16 +336,15 @@ public class QobuzApi
 				str = iss.readAllBytes();
 			}
 		}
-		catch(Exception ex)
+		catch(IOException | URISyntaxException ex)
 		{
-			System.out.println("Excp:" + ex.getMessage());
-			return null ;
+			System.out.println("getImage Excp:" + ex.getMessage());
 		}
 
 		return str ;
 	}
 	
-	static public JSONObject getAudioInfo( userInfo info , String typeSearch , String id , String format )
+	static public JSONObject getAudioInfo( userInfo info , String typeSearch , String id , String format ) throws InterruptedException
 	{
 		if( info == null )
 			return null ;
@@ -348,8 +361,6 @@ public class QobuzApi
 			
 			String result = Arrays.toString( Arrays.asList(Supplement.byteToByte(encoded)).stream().map(x -> String.valueOf(Integer.toHexString((x >> 4) & 0xf) + Integer.toHexString(x& 0xf ))).toArray()).replace("[", "").replace("]", "").replace(",", "").replace(" " , "");
 			
-			
-			System.out.println("") ;
 			String searchStr = new StringBuilder()
 					.append(qobuzAPI)
 					.append(typeSearch)
@@ -378,16 +389,21 @@ public class QobuzApi
 			
 			jsonObject = new JSONObject(new JSONTokener(new StringReader(resp.body())));
 		}
-		catch(Exception ex)
+		catch(IOException | URISyntaxException | NoSuchAlgorithmException ex)
 		{
 			jsonObject = null ;
-			System.out.println("Excp:" + ex.getMessage());
+			System.out.println("getAudioInfo Excp:" + ex.getMessage());
+		}
+		catch(InterruptedException ex)
+		{
+			System.out.println("getAudioInfo Excp:" + ex.getMessage());
+			throw ex ;
 		}
 
 		return jsonObject ;
 	}
 	
-	static public byte[] getAudioFile( userInfo info , String id , String format )
+	static public byte[] getAudioFile( userInfo info , String id , String format ) throws InterruptedException
 	{
 		if( info == null )
 			return null ;
@@ -401,15 +417,22 @@ public class QobuzApi
 				str = iss.readAllBytes();
 			}
 		}
-		catch(Exception ex)
+		catch(IOException | URISyntaxException ex)
 		{
-			System.out.println("Excp:" + ex.getMessage());
+			System.out.println("getAudioFile Excp:" + ex.getMessage());
 		}
+		catch(InterruptedException ex)
+		{
+			System.out.println("getAudioFile Excp:" + ex.getMessage());
+			throw ex ;
+		}
+		
+		System.out.println("\"" + str + "\"");
 
 		return str ;
 	}
 	
-	static public JSONObject search(userInfo info , String typeSearch , String textSearch , Integer offset , Integer limitSearch )
+	static public JSONObject search(userInfo info , String typeSearch , String textSearch , Integer offset , Integer limitSearch ) throws InterruptedException
 	{
 		if( info == null )
 			return null ;
@@ -440,16 +463,20 @@ public class QobuzApi
 			jsonObject = new JSONObject(new JSONTokener(new StringReader(resp.body())));
 			System.out.println(jsonObject);
 		}
-		catch(Exception ex)
+		catch(IOException | URISyntaxException ex)
 		{
 			jsonObject = null ;
 			System.out.println("Excp:" + ex.getMessage());
+		}
+		catch(InterruptedException ex)
+		{
+			throw ex ;
 		}
 		
 		return jsonObject ;
 	}
 	
-	public static userInfo loginUser(String login, String password)
+	public static userInfo loginUser(String login, String password) throws InterruptedException
 	{
 		userInfo li = new userInfo( login, password, "" , "" ,"");
 		try
@@ -459,14 +486,14 @@ public class QobuzApi
 			Thread.sleep(1000);
 		}
 		catch( QobuzError qe ) { System.out.println("Exception: " + qe.getMessage() ) ; return null; }
-		catch (InterruptedException e) { e.printStackTrace(); }
+		catch (InterruptedException e) { throw e ; }
 		
 		li.getStatus().setValue(Supplement.statuses.LOGGED);
 		
 		return li ;
 	}
 	
-	public static userInfo loginUser(userInfo user)
+	public static userInfo loginUser(userInfo user) throws InterruptedException
 	{
 		try
 		{
@@ -475,7 +502,7 @@ public class QobuzApi
 			Thread.sleep(1000);
 		}
 		catch( QobuzError qe ) { System.out.println("Exception: " + qe.getMessage() ) ; return null; }
-		catch (InterruptedException e) { e.printStackTrace(); }
+		catch (InterruptedException e) { throw e ; }
 		
 		user.getStatus().setValue(Supplement.statuses.LOGGED);
 		

@@ -2,19 +2,24 @@ package gui;
 
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.css.CssMetaData;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
@@ -26,16 +31,20 @@ import qobuz_api.*;
 import qobuz_api.QobuzApi.QobuzError;
 import qobuz_api.QobuzApi.userInfo;
 import supplement.Supplement;
+import supplement.Supplement.DraggableArea;
 
-public class LoginWindow extends Scene implements Supplement.sceneSupplement
+public class LoginWindow extends Stage implements Supplement.sceneSupplement
 {
-	Button							loginButton							;
+	Button							loginButton							,
+									exitButton							;
 	Pane							loginPane							;
-	ImageView 						exitImage							;
-	LableTextField					login								,
-									password							;
-	Label							status								,
-									saveUserLabel						;
+	DraggableArea					draggablePane						;
+	Label							loginLabel							,
+									passwordLabel						;
+	TextField						loginField							,
+									passwordField						;
+	Scene							loginScene							;
+	Label							saveUserLabel						;
 	CheckBox						saveUserCheck						;
 	final String					name		= "Login window Qobuz"	;
 	static final double				width		= 300					,
@@ -50,16 +59,14 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 		saveUserInfo = false ;
 	}
 	
+	{
+		user = null ;
+	}
+	
 	@Override
 	public String getName()
 	{
 		return name ;
-	}
-	
-	@Override
-	public Scene getScene()
-	{
-		return this ;
 	}
 	
 	static public LoginWindow createInstance()
@@ -69,132 +76,140 @@ public class LoginWindow extends Scene implements Supplement.sceneSupplement
 		return ( single = new LoginWindow( ) );
 	}
 	
+	void InitObject()
+	{
+		loginPane		= new Pane()							;
+		
+		loginButton		= new Button( "Login" )					;
+		exitButton		= new Button("")						;
+		
+		loginLabel		= new Label("Login:")					;
+		passwordLabel	= new Label("Password:")				;
+		saveUserLabel	= new Label("Save login/password")		;
+		
+		loginField		= new TextField()						;
+		passwordField	= new TextField()						;
+		
+		saveUserCheck	= new CheckBox()						;
+		
+		loginScene		= new Scene(loginPane, width, height)	;
+		
+		loginPane.getChildren().addAll(loginLabel, passwordLabel, loginField, passwordField, loginButton, exitButton, saveUserCheck, saveUserLabel);
+		
+		setScene(loginScene) ;
+		initStyle( StageStyle.TRANSPARENT );
+	}
+	
+	void configCss()
+	{
+		loginScene.getStylesheets().add( MainWindow.class.getResource("/css/main.css").toExternalForm()) ;
+		
+		loginPane.getStyleClass().add("login-pane") ;
+		
+		loginField.getStyleClass().add("login-field") ;
+		passwordField.getStyleClass().add("login-field") ;
+		
+		loginLabel.getStyleClass().add("login-label") ;
+		passwordLabel.getStyleClass().add("login-label") ;
+		saveUserLabel.getStyleClass().add("save-user-label") ;
+		
+		loginButton.getStyleClass().add("login-button") ;
+		exitButton.getStyleClass().add("exit-button") ;
+		
+		saveUserCheck.getStyleClass().add("save-user-checkbox") ;
+	}
+	
 	LoginWindow( )
 	{
-		super(new Group(), width, height);
+		super();
 		InitObject();
+		configCss();
 		
-		status.setText("Start");
-		
-		exitImage.setFitHeight(30);
-		exitImage.setFitWidth(30);
 		loginButton.setPrefWidth(100);
-		status.setPrefWidth(150);
-		
-		saveUserLabel.setFont( Font.font( 17 ) );
-		saveUserCheck.setFont( Font.font( 17 ) );
 		
 		loginPane.applyCss();
 		loginPane.layout();
 		
-		exitImage.setLayoutX(loginPane.getWidth() - exitImage.getFitWidth());
-		loginPane.setStyle("-fx-background-color:black");
-		loginButton.setFont( Font.font( 17 ) );
-		loginButton.setStyle("-fx-background-color: rgba(255,255,255,0.4); -fx-background-radius: 0; -fx-padding: 0; -fx-background-insets: 0;");
+		loginPane.setStyle("-fx-background-color: black");
+		
 		loginButton.setLayoutX( loginPane.getWidth() / 2 - loginButton.getWidth() / 2 ) ;
 		loginButton.setLayoutY( loginPane.getHeight() - 100 );
-		login.setLayoutX( loginPane.getWidth() / 2 - login.getWidth() / 2 ) ;
-		login.setLayoutY( 160 );
-		password.setLayoutX( loginPane.getWidth() / 2 - password.getWidth() / 2 ) ;
-		password.setLayoutY( login.getLayoutY() + 40 );
 		
-		saveUserLabel.setLayoutX(this.getWidth() / 2 - ( saveUserLabel.getWidth() + 20 + saveUserCheck.getWidth() ) / 2 );
-		saveUserLabel.setLayoutY(password.getLayoutY() + 40 );
-		saveUserLabel.setStyle("-fx-text-fill: white; -fx-background-radius: 0; -fx-padding: 0;");
+		loginLabel.setLayoutX( 20 ) ;
+		loginLabel.setLayoutY( 160 );
+		
+		passwordLabel.setLayoutX( 20 ) ;
+		passwordLabel.setLayoutY( loginLabel.getLayoutY() + 40 );
+		
+		loginField.setLayoutX( loginScene.getWidth() / 2 ) ;
+		loginField.setLayoutY( loginLabel.getLayoutY() );
+		loginField.setPrefWidth( loginScene.getWidth() / 2 - loginLabel.getLayoutX() ) ;
+		
+		passwordField.setLayoutX( loginScene.getWidth() / 2 ) ;
+		passwordField.setLayoutY( passwordLabel.getLayoutY() );
+		passwordField.setPrefWidth( loginScene.getWidth() / 2 - loginLabel.getLayoutX() ) ;
+		
+		saveUserLabel.setLayoutX(loginScene.getWidth() / 2 - ( saveUserLabel.getWidth() + 20 + saveUserCheck.getWidth() ) / 2 );
+		saveUserLabel.setLayoutY(passwordLabel.getLayoutY() + 40 );
 		
 		saveUserCheck.setLayoutX( saveUserLabel.getLayoutX() + saveUserLabel.getWidth() + 20 );
-		saveUserCheck.setLayoutY(password.getLayoutY() + 40 );
-		saveUserCheck.setStyle("-fx-background-color: rgba(255,255,255,0.4); -fx-background-radius: 0; -fx-padding: 0; -fx-background-insets: 0;");
-		
-		status.setFont( Font.font( 17 ) );
-		status.setLayoutX(loginPane.getWidth() / 2 - status.getPrefWidth() / 2);
-		status.setLayoutY(loginButton.getLayoutY() + loginButton.prefHeight(-1) + 10 );
-		status.setStyle("-fx-text-fill: white; -fx-alignment:center;");
+		saveUserCheck.setLayoutY(passwordLabel.getLayoutY() + 40 );
 		
 		saveUserCheck.setOnAction( (Event) -> {
 					LoginWindow.saveUserInfo = !LoginWindow.saveUserInfo ;
 				});
 		
 		loginButton.setOnMouseClicked( (Event) -> {
-					user = new userInfo() ;
+					QobuzApi.userInfo newUser ;
 					
-					user.setLogin(login.getText());
-					user.setPassword(password.getText());
-					user.setSave(saveUserCheck.isArmed());
+					if( user != null )
+					{
+						newUser = user ;
+						newUser.setLogin(loginField.getText());
+						newUser.setPassword(passwordField.getText());
+						newUser.setSave(saveUserCheck.isArmed());
+						
+						newUser = new QobuzApi.userInfo();
+						supplement.Settings.users.add(newUser);
+						supplement.Settings.users.remove(newUser) ; // Need to trigger event handler in Dashboard. Don't wanna make user as property.
+					}
+					else
+					{
+						newUser = new userInfo() ;
+						newUser.setLogin(loginField.getText());
+						newUser.setPassword(passwordField.getText());
+						newUser.setSave(saveUserCheck.isArmed());
+						supplement.Settings.addUser(newUser);
+					}
 					
-					supplement.Settings.addUser(user);
-					Platform.runLater( () -> this.getRoot().getScene().windowProperty().get().fireEvent( new WindowEvent(this.getRoot().getScene().windowProperty().get() , WindowEvent.WINDOW_CLOSE_REQUEST) ) );
+					user = null ;
+					
+					Platform.runLater( () -> this.hide() );
 		});
 		
-		exitImage.setOnMouseClicked(Event -> {
-			((Stage)this.getWindow()).close();
+		exitButton.setOnMouseClicked(Event -> {
+			this.hide();
 		});
+		
+		loginPane.applyCss();
+		loginPane.layout();
+		
+		exitButton.setPrefSize(loginButton.prefHeight(-1), loginButton.prefHeight(-1));
+		exitButton.setLayoutX(loginPane.getWidth() - exitButton.prefWidth(-1));
+		
+		draggablePane = new DraggableArea(0, 0, loginScene.getWidth() - exitButton.getPrefWidth(), exitButton.getPrefHeight(), loginScene) ;
+		draggablePane.getStyleClass().add("draggable-pane") ;
+		
+		loginPane.getChildren().add(draggablePane) ;
+		
 	}
 	
-	void InitObject()
+	public void setLoginPass(String login, String password, QobuzApi.userInfo userEdit)
 	{
-		loginButton = new Button( "Login" ) ;
-		loginPane = new Pane() ;
-		login = new LableTextField("Login:", 150, 17, LableTextField.POSITION.LEFT);
-		password = new LableTextField("Password:", 150, 17, LableTextField.POSITION.LEFT);
-		exitImage = new ImageView( new Image(MainWindow.class.getResourceAsStream("/exit.png")) );
-		status = new Label("") ;
-		saveUserLabel = new Label("Save login/password") ;
-		saveUserCheck = new CheckBox() ;
+		loginField.setText(login);
+		passwordField.setText(password);
 		
-		loginPane.getChildren().addAll(login, password, loginButton, exitImage, status, saveUserCheck, saveUserLabel);
-		this.setRoot(loginPane) ;
-	}
-}
-
-class LableTextField extends Pane
-{
-	TextField	field	;
-	Label		text	;
-	
-	public enum POSITION
-	{
-		LEFT , UP
+		user = userEdit ;
 	}
 	
-	public String getText() { return field.getText() ; }
-	public void setText( String str ) { field.setText(str); ; }
-	
-	LableTextField( String labelText , int fw , int fonth , POSITION pos )
-	{
-		super();
-		text = new Label( labelText ) ;
-		field = new TextField();
-		
-		this.getChildren().addAll(text, field);
-		Scene s = new Scene(this);
-		
-		text.setStyle("-fx-text-fill: white;");
-		field.setStyle("""
-				-fx-background-color: rgba(255,255,255,0.4);
-				-fx-background-radius: 0;
-				-fx-padding: 1;
-				-fx-text-fill: white;
-				-fx-background-insets: 0;
-				""");
-		this.setStyle("-fx-background-color: rgba(0,0,0,0);");
-		
-		text.setFont(new Font(fonth));
-		field.setFont(new Font(fonth));
-		
-		this.applyCss() ;
-		this.layout();
-		
-		field.setPrefSize(fw, text.prefHeight(-1));
-		switch( pos )
-		{
-			case LEFT ->
-				field.setLayoutX(text.prefWidth(-1) + 5 );
-			case UP ->
-			{
-				field.setLayoutY(text.prefHeight(-1) + 5 );
-				text.setLayoutX(this.prefWidth(-1) / 2 - text.prefWidth(-1)/2);
-			}
-		}
-	}
 }

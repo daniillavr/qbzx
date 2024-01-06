@@ -16,8 +16,12 @@ import org.jaudiotagger.tag.images.*;
 import org.json.*;
 
 import gui.Dashboard;
+import javafx.application.Platform;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import qobuz_api.QobuzApi;
 
 public class Supplement {
@@ -55,18 +59,21 @@ public class Supplement {
 		final String currentStatus ;
 	}
 	
-	static public Pane getViewPaneByType( String type , JSONObject obj)
+	static public Pane getViewPaneByType( String type , JSONObject obj) throws InterruptedException
 	{
-		if( type.equals("Track") )
-			return new viewElements.musicEntry( obj ,
-					QobuzApi.getImage(Dashboard.createInstance().getCurrentUser(), type.toLowerCase(), ((Integer)obj.getInt("id")).toString(), "small") );
-		else if(type.equals("Album"))
-			return new viewElements.albumEntry( obj ,
-					QobuzApi.getImage(Dashboard.createInstance().getCurrentUser(), type.toLowerCase(), obj.getString("id"), "small") );
-		else if(type.equals("Artist"))
-			return new viewElements.artistEntry( obj,
-					QobuzApi.getImage(Dashboard.createInstance().getCurrentUser(), type.toLowerCase(), ((Integer)obj.getInt("id")).toString(), "small") );
-		
+		try {
+			if( type.toLowerCase().equals("track") )
+					return new viewElements.musicEntry( obj ,
+							QobuzApi.getImage(Dashboard.createInstance().getCurrentUser(), type.toLowerCase(), ((Integer)obj.getInt("id")).toString(), "small") );
+				else if(type.toLowerCase().equals("album"))
+					return new viewElements.albumEntry( obj ,
+							QobuzApi.getImage(Dashboard.createInstance().getCurrentUser(), type.toLowerCase(), obj.getString("id"), "small") );
+				else if(type.toLowerCase().equals("artist"))
+					return new viewElements.artistEntry( obj,
+							QobuzApi.getImage(Dashboard.createInstance().getCurrentUser(), type.toLowerCase(), ((Integer)obj.getInt("id")).toString(), "small") );
+		} catch (InterruptedException e) {
+			throw e ;
+		}
 		return null ;
 	}
 	
@@ -93,10 +100,11 @@ public class Supplement {
 		}
 	}
 	
-	static public void createFileAndSet( JSONObject fileInfo , Path path , String format , String extension )
+	static public void createFileAndSet( JSONObject fileInfo , Path path , String format , String extension ) throws InterruptedException
 	{
-		byte[] musicFile = QobuzApi.getAudioFile(Dashboard.createInstance().getCurrentUser() , Integer.valueOf(fileInfo.getInt("id")).toString() , format ) ;
+		byte[] musicFile = null ;
 		try {
+			musicFile = QobuzApi.getAudioFile(Dashboard.createInstance().getCurrentUser() , Integer.valueOf(fileInfo.getInt("id")).toString() , format ) ;
 			Files.createDirectories(path) ;
 		} catch (JSONException e) {
 			e.printStackTrace();
@@ -164,6 +172,36 @@ public class Supplement {
 		{
 			System.out.println("Exception ID3: " + ex.getMessage());
 			ex.printStackTrace();
+		}
+	}
+	
+	public static class DraggableArea extends Pane
+	{
+		double	prevX	,
+				prevY	;
+		Window	window	;
+		
+		public DraggableArea(double x , double y , double w , double h , Scene windowNode )
+		{
+			super( ) ;
+			System.out.println(x);
+			setPrefSize( w , h ) ;
+			setLayoutX( x ) ;
+			setLayoutX( y ) ;
+			setOnMousePressed( value -> {
+				window = windowNode.getWindow() ;
+				prevX = value.getScreenX() ;
+				prevY = value.getScreenY() ;
+			}) ;
+			
+			setOnMouseDragged( value -> {
+				Platform.runLater( () -> {
+					window.setX( window.getX() + value.getScreenX() - prevX ) ;
+					window.setY( window.getY() + value.getScreenY() - prevY ) ;
+					prevX = value.getScreenX() ;
+					prevY = value.getScreenY() ;
+				}) ;
+			}) ;
 		}
 	}
 }

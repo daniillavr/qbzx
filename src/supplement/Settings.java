@@ -3,6 +3,8 @@ package supplement;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -10,6 +12,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import javafx.beans.property.SimpleListProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import qobuz_api.QobuzApi;
 import qobuz_api.QobuzApi.userInfo;
 
@@ -17,16 +22,21 @@ public class Settings
 {
 	public static String downloadPath = "" ;
 	static String configFile = "config.cfg" ;
-	public static List<QobuzApi.userInfo> users ;
+	public static ObservableList<QobuzApi.userInfo> users ;
 	
 	static void setDefaultValues()
 	{
-		downloadPath = "" ;
+		try {
+			downloadPath = new File(".").getCanonicalPath().toString() ;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} ;
 	}
 	
 	static
 	{
-		users = new LinkedList<QobuzApi.userInfo>() ;
+		users = FXCollections.observableArrayList(new ArrayList<QobuzApi.userInfo>());
 		try
 		{
 			File fl = new File(configFile) ;
@@ -70,6 +80,7 @@ public class Settings
 		catch(Exception ex)
 		{
 			System.out.println( "Exception " + ex.getClass() + " in Settings reported: " + ex.getMessage() ) ;
+			ex.printStackTrace();
 		}
 	}
 	
@@ -79,18 +90,22 @@ public class Settings
 			users.add(li) ;
 	}
 	
-	public static void writeUsers()
+	public static void writeConfig()
 	{
 		try
 		{
 			File fl = new File(configFile) ;
 			FileReader fr = new FileReader( fl ) ;
 			JSONObject js = new JSONObject(new JSONTokener(fr)) ;
+			js.put("DownloadPath", downloadPath);
 			fr.close();
 			for(var ui : users)
 			{
+				if(ui.getLogin().equals("+"))
+					continue ;
+				
 				if( ui.getSave() )
-				{
+				{	
 					for( int i = 0 ; i < js.getJSONArray("Users").length() ; ++i)
 						if( js.getJSONArray("Users").getJSONObject(i).getString("login") == ui.getLogin() )
 							js.getJSONArray("Users").remove(i) ;
